@@ -1,5 +1,6 @@
 # Проектная работа "WebLarek. Плохой сервер.", спринт 17
-Ссылка на репозиторий: https://github.com/Romanticus/bad-server.git
+1. Ссылка на репозиторий: https://github.com/Romanticus/bad-server.git
+2. Роман, 13, Fullstack
 ## Подготовка к работе
 1. Склонировать репозиторий
 2. Запустить docker

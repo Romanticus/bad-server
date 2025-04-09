@@ -10,13 +10,19 @@ export const uploadFile = async (
     if (!req.file) {
         return next(new BadRequestError('Файл не загружен'))
     }
+    if (req.file.size < 2 * 1024) {
+        return next(new BadRequestError('Размер файла должен быть больше 2KB'))
+    }
+
     try {
-        const fileName = process.env.UPLOAD_PATH
-            ? `/${process.env.UPLOAD_PATH}/${req.file.filename}`
-            : `/${req.file?.filename}`
+        // Используем безопасное имя файла, сгенерированное middleware
+        const fileName = process.env.UPLOAD_PATH_TEMP
+            ? `/${process.env.UPLOAD_PATH_TEMP}/${req.file.filename}`
+            : `/${req.file.filename}`
+            
         return res.status(constants.HTTP_STATUS_CREATED).send({
             fileName,
-            originalName: req.file?.originalname,
+            originalName: req.file.originalname
         })
     } catch (error) {
         return next(error)
