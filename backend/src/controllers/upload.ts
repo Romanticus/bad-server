@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 import { constants } from 'http2'
 import BadRequestError from '../errors/bad-request-error'
-import path from 'path'
 
 export const uploadFile = async (
     req: Request,
@@ -16,6 +15,7 @@ export const uploadFile = async (
     }
 
     try {
+        // Используем безопасное имя файла, сгенерированное middleware
         const fileName = process.env.UPLOAD_PATH_TEMP
             ? `/${process.env.UPLOAD_PATH_TEMP}/${req.file.filename}`
             : `/${req.file.filename}`

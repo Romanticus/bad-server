@@ -55,7 +55,7 @@ app.use((req, res, next) => {
   
   // Проверяем CSRF-токен для небезопасных методов
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
-    const token = req.headers['csrf-token'] || req.body._csrf;
+    const token = req.headers['csrf-token'] || req.body.csrfToken;
     
     // Если маршрут для загрузки файлов, пропускаем проверку
     if (req.originalUrl.includes('/upload')) {
@@ -85,12 +85,13 @@ app.use((req, res, next) => {
 // Очистка старых токенов каждый час
 setInterval(() => {
   const now = Date.now();
-  for (const [token, data] of tokens.entries()) {
+  // Используем Array.from для итерации по Map
+  Array.from(tokens.entries()).forEach(([token, data]) => {
     // Удаляем токены старше 1 часа
     if (now - data.created > 3600000) {
       tokens.delete(token);
     }
-  }
+  });
 }, 3600000);
 
 app.options('*', cors())

@@ -38,8 +38,8 @@ export const getOrders = async (
       }
   
       if (search) {
-        if (typeof search === 'string' && search.length < 100 && /^[\wа-яА-ЯёЁ0-9\s\-]+$/.test(search as string)) {
-          const searchRegex = new RegExp(search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i')
+        if (typeof search === 'string' && search.length < 100 && /^[\wа-яА-ЯёЁ0-9\s-]+$/.test(search as string)) {
+          const searchRegex = new RegExp(search.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i')
           
           const searchNumber = Number(search)
           const searchConditions: any[] = [{ 'products.title': searchRegex }]
@@ -191,10 +191,10 @@ export const getOrders = async (
   
       let orders = user.orders as unknown as IOrder[]
   
-      const isSafe = typeof search === 'string' && search.length < 100 && /^[\wа-яА-ЯёЁ0-9\s\-.,]+$/.test(search)
+      const isSafe = typeof search === 'string' && search.length < 100 && /^[\wа-яА-ЯёЁ0-9\s-.,]+$/.test(search)
   
       if (search && isSafe) {
-        const searchRegex = new RegExp(search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i');
+        const searchRegex = new RegExp(search.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i');
         const searchNumber = Number(search)
         const products = await Product.find({ title: searchRegex })
         const productIds: Types.ObjectId[] = products.map((p) => p._id as Types.ObjectId)
