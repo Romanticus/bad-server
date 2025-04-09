@@ -130,12 +130,12 @@ userSchema.pre('save', async function hashingPassword(next) {
 
 // Можно лучше: централизованное создание accessToken и  refresh токена
 
-userSchema.methods.generateAccessToken = function generateAccessToken() {
+userSchema.methods.generateAccessToken = function generateAccessToken(this: HydratedDocument<IUser>) {
     const user = this
     // Создание accessToken токена возможно в контроллере авторизации
     return jwt.sign(
         {
-            _id: user._id.toString(),
+            _id: (user._id as Types.ObjectId).toString(),
             email: user.email,
         },
         ACCESS_TOKEN.secret,
@@ -147,12 +147,12 @@ userSchema.methods.generateAccessToken = function generateAccessToken() {
 }
 
 userSchema.methods.generateRefreshToken =
-    async function generateRefreshToken() {
+    async function generateRefreshToken(this: HydratedDocument<IUser>) {
         const user = this
         // Создание refresh токена возможно в контроллере авторизации/регистрации
         const refreshToken = jwt.sign(
             {
-                _id: user._id.toString(),
+                _id: (user._id as Types.ObjectId).toString(),
             },
             REFRESH_TOKEN.secret,
             {
@@ -190,10 +190,10 @@ userSchema.statics.findUserByCredentials = async function findByCredentials(
     return user
 }
 
-userSchema.methods.calculateOrderStats = async function calculateOrderStats() {
+userSchema.methods.calculateOrderStats = async function calculateOrderStats(this: HydratedDocument<IUser>) {
     const user = this
     const orderStats = await mongoose.model('order').aggregate([
-        { $match: { customer: user._id } },
+        { $match: { customer: user._id as Types.ObjectId } },
         {
             $group: {
                 _id: null,
