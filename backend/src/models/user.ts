@@ -135,7 +135,7 @@ userSchema.methods.generateAccessToken = function generateAccessToken() {
     // Создание accessToken токена возможно в контроллере авторизации
     return jwt.sign(
         {
-            _id: user.id,
+            _id: user._id.toString(),
             email: user.email,
         },
         ACCESS_TOKEN.secret,
@@ -152,7 +152,7 @@ userSchema.methods.generateRefreshToken =
         // Создание refresh токена возможно в контроллере авторизации/регистрации
         const refreshToken = jwt.sign(
             {
-                _id: user.id,
+                _id: user._id.toString(),
             },
             REFRESH_TOKEN.secret,
             {
@@ -192,9 +192,8 @@ userSchema.statics.findUserByCredentials = async function findByCredentials(
 
 userSchema.methods.calculateOrderStats = async function calculateOrderStats() {
     const user = this
-    const userId = user.id;
     const orderStats = await mongoose.model('order').aggregate([
-        { $match: { customer: new Types.ObjectId(userId) } },
+        { $match: { customer: user._id } },
         {
             $group: {
                 _id: null,
