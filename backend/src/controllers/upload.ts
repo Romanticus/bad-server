@@ -16,8 +16,6 @@ export const uploadFile = async (
     }
 
     try {
-        // Используем имя файла, сгенерированное multer middleware
-        // Важно: в middleware file.ts мы уже настроили безопасную генерацию имен файлов с UUID
         const fileName = process.env.UPLOAD_PATH_TEMP
             ? `/${process.env.UPLOAD_PATH_TEMP}/${req.file.filename}`
             : `/${req.file.filename}`
