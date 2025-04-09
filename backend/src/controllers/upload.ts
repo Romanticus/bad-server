@@ -1,7 +1,8 @@
 import { NextFunction, Request, Response } from 'express'
 import { constants } from 'http2'
 import BadRequestError from '../errors/bad-request-error'
-import { v4 as uuidv4 } from 'uuid';
+import path from 'path'
+
 export const uploadFile = async (
     req: Request,
     res: Response,
@@ -15,11 +16,15 @@ export const uploadFile = async (
     }
 
     try {
-        const fileName = `${process.env.UPLOAD_PATH_TEMP}/${uuidv4()}`
-          
+        // Используем имя файла, сгенерированное multer middleware
+        // Важно: в middleware file.ts мы уже настроили безопасную генерацию имен файлов с UUID
+        const fileName = process.env.UPLOAD_PATH_TEMP
+            ? `/${process.env.UPLOAD_PATH_TEMP}/${req.file.filename}`
+            : `/${req.file.filename}`
             
         return res.status(constants.HTTP_STATUS_CREATED).send({
-            fileName
+            fileName,
+            originalName: req.file.originalname
         })
     } catch (error) {
         return next(error)
