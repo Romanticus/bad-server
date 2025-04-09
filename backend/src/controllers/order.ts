@@ -38,45 +38,65 @@ export const getOrders = async (
       }
   
       if (search) {
-        if (/[^\w\s]/.test(search as string)) {
+        if (typeof search === 'string' && search.length < 100 && /^[\wа-яА-ЯёЁ0-9\s\-]+$/.test(search as string)) {
+          const searchRegex = new RegExp(search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i')
+          
+          const searchNumber = Number(search)
+          const searchConditions: any[] = [{ 'products.title': searchRegex }]
+  
+          if (!Number.isNaN(searchNumber)) {
+            searchConditions.push({ orderNumber: searchNumber })
+          }
+  
+          filters.$or = searchConditions
+        } else {
           throw new BadRequestError('Передан невалидный поисковый запрос')
         }
       }
   
-      if (status) {
-        if (typeof status === 'object') {
-          Object.assign(filters, status)
-        }
-        if (typeof status === 'string') {
-          filters.status = status
-        }
-      }
-  
-      if (totalAmountFrom) {
-        filters.totalAmount = {
-          ...filters.totalAmount,
-          $gte: Number(totalAmountFrom),
-        }
-      }
-  
-      if (totalAmountTo) {
-        filters.totalAmount = {
-          ...filters.totalAmount,
-          $lte: Number(totalAmountTo),
-        }
-      }
-  
       if (orderDateFrom) {
-        filters.createdAt = {
-          ...filters.createdAt,
-          $gte: new Date(orderDateFrom as string),
+        try {
+          filters.createdAt = {
+            ...filters.createdAt,
+            $gte: new Date(orderDateFrom as string),
+          }
+        } catch (error) {
+          throw new BadRequestError('Некорректный формат даты начала периода')
         }
       }
   
       if (orderDateTo) {
-        filters.createdAt = {
-          ...filters.createdAt,
-          $lte: new Date(orderDateTo as string),
+        try {
+          filters.createdAt = {
+            ...filters.createdAt,
+            $lte: new Date(orderDateTo as string),
+          }
+        } catch (error) {
+          throw new BadRequestError('Некорректный формат даты конца периода')
+        }
+      }
+  
+      if (totalAmountFrom) {
+        const amount = Number(totalAmountFrom)
+        if (!Number.isNaN(amount)) {
+          filters.totalAmount = {
+            ...filters.totalAmount,
+            $gte: amount,
+          }
+        } else {
+          throw new BadRequestError('Некорректное значение минимальной суммы')
+        }
+      }
+  
+      if (totalAmountTo) {
+        const amount = Number(totalAmountTo)
+        if (!Number.isNaN(amount)) {
+          filters.totalAmount = {
+            ...filters.totalAmount,
+            $lte: amount,
+          }
+        } else {
+          throw new BadRequestError('Некорректное значение максимальной суммы')
         }
       }
   
@@ -102,29 +122,17 @@ export const getOrders = async (
         { $unwind: '$products' },
       ]
   
-      if (search) {
-        const searchRegex = new RegExp(search as string, 'i')
-        const searchNumber = Number(search)
-  
-        const searchConditions: any[] = [{ 'products.title': searchRegex }]
-  
-        if (!Number.isNaN(searchNumber)) {
-          searchConditions.push({ orderNumber: searchNumber })
-        }
-  
-        aggregatePipeline.push({
-          $match: {
-            $or: searchConditions,
-          },
-        })
-  
-        filters.$or = searchConditions
-      }
-  
       const sort: { [key: string]: any } = {}
   
       if (sortField && sortOrder) {
-        sort[sortField as string] = sortOrder === 'desc' ? -1 : 1
+        const allowedSortFields = ['createdAt', 'orderNumber', 'status', 'totalAmount'];
+        const field = sortField as string;
+        
+        if (allowedSortFields.includes(field) && ['asc', 'desc'].includes(sortOrder as string)) {
+          sort[field] = sortOrder === 'desc' ? -1 : 1;
+        } else {
+          throw new BadRequestError('Некорректные параметры сортировки');
+        }
       }
   
       aggregatePipeline.push(
@@ -170,6 +178,7 @@ export const getOrders = async (
     try {
       const userId = res.locals.user._id
       const { search, page = 1, limit = 5 } = req.query
+      
       const safeLimit = Math.min(Number(limit), 10)
       const skip = (Number(page) - 1) * safeLimit
   
@@ -185,7 +194,7 @@ export const getOrders = async (
       const isSafe = typeof search === 'string' && search.length < 100 && /^[\wа-яА-ЯёЁ0-9\s\-.,]+$/.test(search)
   
       if (search && isSafe) {
-        const searchRegex = new RegExp(search, 'i')
+        const searchRegex = new RegExp(search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i');
         const searchNumber = Number(search)
         const products = await Product.find({ title: searchRegex })
         const productIds: Types.ObjectId[] = products.map((p) => p._id as Types.ObjectId)
@@ -198,7 +207,9 @@ export const getOrders = async (
             !Number.isNaN(searchNumber) && order.orderNumber === searchNumber
           return matchesTitle || matchesNumber
         })
-      } 
+      } else if (search && !isSafe) {
+        return next(new BadRequestError('Передан невалидный поисковый запрос'))
+      }
   
       const totalOrders = orders.length
       const totalPages = Math.ceil(totalOrders / safeLimit)
@@ -315,7 +326,7 @@ export const createOrder = async (
         totalAmount: total,
         products: items,
         payment: escape(payment).slice(0, 50),
-        phone: normalizedPhone,
+        phone: normalizedPhone.slice(0, 15),
         email: escape(email).slice(0, 100),
         comment: escape(comment).slice(0, 1000),
         customer: userId,

@@ -1,6 +1,8 @@
 import { Request, Express } from 'express'
 import multer, { FileFilterCallback } from 'multer'
 import { join } from 'path'
+import { v4 as uuidv4 } from 'uuid'
+import path from 'path'
 
 type DestinationCallback = (error: Error | null, destination: string) => void
 type FileNameCallback = (error: Error | null, filename: string) => void
@@ -27,7 +29,9 @@ const storage = multer.diskStorage({
         file: Express.Multer.File,
         cb: FileNameCallback
     ) => {
-        cb(null, file.originalname)
+        // Генерируем уникальное имя файла, сохраняя расширение
+        const uniqueFileName = `${uuidv4()}${path.extname(file.originalname)}`;
+        cb(null, uniqueFileName);
     },
 })
 
